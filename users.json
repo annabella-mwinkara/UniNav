@@ -1,0 +1,7 @@
+{
+  "josephkwame.nkrumah@stu.ucc.edu.gh": {
+    "name": "KWAME",
+    "email": "josephkwame.nkrumah@stu.ucc.edu.gh",
+    "password_hash": "scrypt:32768:8:1$bjv061L5W6iiThDS$43b91e70273ccf9a6d9bde8f933cb3ec5b4668fb60d4f9236b0d5491828e2e2d10f28117891df033df2a071abe5da2715a9166567277c2ce5563ac1897cacb19"
+  }
+}

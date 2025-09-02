@@ -9,20 +9,131 @@
 <body>
   <!-- Navigation Bar -->
   <nav>
-   <div class="logo">UniNav</div>
-      <a href="{{url_for('login')}}">Home</a>|
-      <a href="{{url_for('directions')}}">Directions</a>|
+    <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleNav()">☰</button>
+    <div class="logo"><a href="{{url_for('login')}}">UniNav</a></div>
+    <div class="nav-links" id="navLinks">
+      <a href="{{url_for('login')}}">Home</a>
+      <a href="{{url_for('directions')}}">Directions</a>
       <a href="{{url_for('maps')}}">Maps</a>
-    <!-- Panic Button -->
-  <button class="panic-button" onclick="sendPanic()">🚨 SOS Panic</button>
+      {% if user %}
+      <button type="button" class="nav-profile-btn" onclick="openProfileModal()">👤 Profile</button>
+      {% endif %}
+    </div>
+  </nav>
+  
+  <button class="panic-button panic-button-home" onclick="sendPanic()">PANIC? Press me now!</button>
+
   <script>
-    function sendPanic() {
-      fetch('/panic', {method: 'POST'})
-        .then(response => response.json())
-        .then(data => alert(data.message))
-        .catch(error => alert("Error sending panic alert."));
-    }
-  </script>
+      function toggleNav(){
+        const el = document.getElementById('navLinks');
+        el.classList.toggle('open');
+      }
+
+      let panicInterval = null;
+      let panicActive = false;
+
+      function sendPanic() {
+        if (panicActive) {
+          // Stop panic mode
+          clearInterval(panicInterval);
+          panicActive = false;
+          fetch('/panic', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'stop'})
+          })
+          .then(response => response.json())
+          .then(data => {
+            alert(data.message);
+            updatePanicButton();
+          });
+        } else {
+          // Start panic mode
+          panicActive = true;
+          
+          // Send first alert immediately
+          fetch('/panic', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'start'})
+          })
+          .then(response => response.json())
+          .then(data => {
+            alert(data.message);
+            updatePanicButton();
+            
+            // Set interval for every 5 minutes (300000 ms)
+            panicInterval = setInterval(() => {
+              fetch('/panic', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({action: 'start'})
+              })
+              .then(response => response.json())
+              .then(data => console.log('Panic alert sent:', data.message));
+            }, 300000); // 5 minutes
+          })
+          .catch(error => {
+            alert("Error sending panic alert.");
+            panicActive = false;
+            updatePanicButton();
+          });
+        }
+      }
+
+      function updatePanicButton() {
+        const buttons = document.querySelectorAll('.panic-button, .panic-button-hero');
+        buttons.forEach(btn => {
+          if (panicActive) {
+            btn.innerHTML = btn.classList.contains('panic-button-hero') 
+              ? '🛑 STOP PANIC ALERTS 🛑<br><span style="font-size: 14px; font-weight: normal;">Click to stop emergency alerts</span>'
+              : '🛑 Stop Alerts';
+            btn.style.background = '#ff6600';
+          } else {
+            btn.innerHTML = btn.classList.contains('panic-button-hero')
+              ? '🚨 EMERGENCY PANIC BUTTON 🚨<br><span style="font-size: 14px; font-weight: normal;">Press for immediate help!</span>'
+              : '🚨 SOS Panic';
+            btn.style.background = btn.classList.contains('panic-button-hero') ? '#ff0033' : 'red';
+          }
+        });
+      }
+
+      // Check panic status on page load
+      window.addEventListener('load', function() {
+        fetch('/panic_status')
+          .then(response => response.json())
+          .then(data => {
+            if (data.active) {
+              panicActive = true;
+              updatePanicButton();
+              // Resume interval if panic was active
+              panicInterval = setInterval(() => {
+                fetch('/panic', {
+                  method: 'POST',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({action: 'start'})
+                })
+                .then(response => response.json())
+                .then(data => console.log('Panic alert sent:', data.message));
+              }, 300000);
+            }
+          });
+      });
+
+      function openProfileModal() {
+        document.getElementById('profileModal').style.display = 'block';
+      }
+      function closeProfileModal() {
+        document.getElementById('profileModal').style.display = 'none';
+      }
+      // Close modal when clicking outside of it
+      window.onclick = function(event) {
+        const modal = document.getElementById('profileModal');
+        if (event.target === modal) {
+          modal.style.display = 'none';
+        }
+      }
+    </script>
   </nav>
   <!-- Hero Section -->
   <div class="hero">
@@ -31,20 +142,59 @@
   </div>
 
   <!-- User Info Form -->
+  {% if not user %}
   <div class="form-card">
-    <h2>👤 Student Info</h2>
+    <h2>👤 Login or Register</h2>
+    {% if error %}
+      <div class="hint" style="color:#ffdddd; background:#7a0000; padding:8px 10px; border-radius:6px; margin-bottom:10px;">{{ error }}</div>
+    {% endif %}
+    {% if message %}
+      <div class="hint" style="color:#003300; background:#ccffcc; padding:8px 10px; border-radius:6px; margin-bottom:10px;">{{ message }}</div>
+    {% endif %}
     <form action="/" method="post">
       <label for="name">Your Name:</label>
       <input type="text" id="name" name="name" placeholder="Enter your full name"
-             value="{{ session.get('name', '') }}" required>
+             value="{{ session.get('name', '') }}">
 
       <label for="email">Your Email:</label>
       <input type="email" id="email" name="email" placeholder="Enter your email"
              value="{{ session.get('email', '') }}" required>
 
-      <button type="submit" class="primary-btn">💾 Save Info</button>
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" placeholder="Enter password" required>
+
+      <button type="submit" class="primary-btn">🔐 Login / Create Account</button>
     </form>
   </div>
+  {% else %}
+  <div class="hero">
+    <h1>Welcome Back, {{ user.name if user.name else user['name'] }}! 🎉</h1>
+    <p>Your campus navigation and safety companion is ready.</p>
+    <div style="margin-top: 40px;">
+      <button class="panic-button panic-button-hero" onclick="sendPanic()">
+        🚨 EMERGENCY PANIC BUTTON 🚨<br>
+        <span style="font-size: 14px; font-weight: normal;">Press for immediate help!</span>
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Profile Modal -->
+  {% if user %}
+  <div id="profileModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <button type="button" class="close" onclick="closeProfileModal()" aria-label="Close">&times;</button>
+      <h2>⚙️ Update Profile</h2>
+      <form action="/update_profile" method="post">
+        <label for="modal_name">Name:</label>
+        <input type="text" id="modal_name" name="name" placeholder="Update your name" value="{{ user.name if user.name else user['name'] }}">
+        <label for="modal_password">New Password:</label>
+        <input type="password" id="modal_password" name="password" placeholder="New password (leave blank to keep current)">
+        <button type="submit" class="primary-btn">💾 Update Profile</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
   <footer>
     <p>© 2025 UniNav. All Rights Reserved.</p>
   </footer>

@@ -5,24 +5,94 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>UniNav - Your Navigation Partner</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
   <!-- Navigation Bar -->
   <nav>
-    <div class="logo">UniNav</div>
-    <a href="{{ url_for('login') }}">Home</a> |
-    <a href="{{ url_for('directions') }}">Directions</a> |
-    <a href="{{ url_for('maps') }}">Maps</a>
-    <!-- Panic Button -->
+    <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleNav()">☰</button>
+    <div class="logo"><a href="{{ url_for('login') }}">UniNav</a></div>
+    <div class="nav-links" id="navLinks">
+      <a href="{{ url_for('login') }}">Home</a>
+      <a href="{{ url_for('directions') }}">Directions</a>
+      <a href="{{ url_for('maps') }}">Maps</a>
+      {% if session.get('user_email') %}
+      <button type="button" class="nav-profile-btn" onclick="openProfileModal()">👤 Profile</button>
+      {% endif %}
+    </div>
     <button class="panic-button" onclick="sendPanic()">🚨 SOS Panic</button>
   </nav>
 
   <script>
+    function toggleNav(){
+      const el = document.getElementById('navLinks');
+      el.classList.toggle('open');
+    }
+
+    let panicInterval = null;
+    let panicActive = false;
+
     function sendPanic() {
-      fetch('/panic', {method: 'POST'})
+      if (panicActive) {
+        // Stop panic mode
+        clearInterval(panicInterval);
+        panicActive = false;
+        fetch('/panic', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({action: 'stop'})
+        })
         .then(response => response.json())
-        .then(data => alert(data.message))
-        .catch(error => alert("Error sending panic alert."));
+        .then(data => {
+          alert(data.message);
+          updatePanicButton();
+        });
+      } else {
+        // Start panic mode
+        panicActive = true;
+        
+        // Send first alert immediately
+        fetch('/panic', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({action: 'start'})
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          updatePanicButton();
+          
+          // Set interval for every 5 minutes
+          panicInterval = setInterval(() => {
+            fetch('/panic', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({action: 'start'})
+            })
+            .then(response => response.json())
+            .then(data => console.log('Panic alert sent:', data.message));
+          }, 300000); // 5 minutes
+        })
+        .catch(error => {
+          alert("Error sending panic alert.");
+          panicActive = false;
+          updatePanicButton();
+        });
+      }
+    }
+
+    function updatePanicButton() {
+      const buttons = document.querySelectorAll('.panic-button');
+      buttons.forEach(btn => {
+        if (panicActive) {
+          btn.innerHTML = '🛑 Stop Alerts';
+          btn.style.background = '#ff6600';
+        } else {
+          btn.innerHTML = '🚨 SOS Panic';
+          btn.style.background = 'red';
+        }
+      });
     }
 
     // ✅ Use My Location button
@@ -51,7 +121,7 @@
   </script>
 
   <!-- Route Form -->
-  <div class="form-card">
+  <div class="form-card route-card">
     <h2>🗺️ Plan Your Route</h2>
     <form action="{{ url_for('directions') }}" method="post">
       <label for="current">Current Location:</label>
@@ -77,7 +147,34 @@
   </div>
   {% endif %}
 
-  <div id="map" style="height: 500px; width: 100%;"></div>
+  <!-- Directions Results -->
+  {% if route_coords %}
+  <div class="directions-card">
+    <h3>📍 Route Map</h3>
+    <div id="map" style="height: 400px; width: 100%; border-radius: 8px; margin-bottom: 20px;"></div>
+    
+    {% if steps %}
+    <h3>📝 Step-by-Step Directions</h3>
+    <div class="steps-list">
+      {% for step in steps %}
+      <div class="step-item">
+        <div class="step-number">{{ loop.index }}</div>
+        <div class="step-text">{{ step.instruction }}</div>
+        {% if step.distance_m %}
+        <div class="step-distance">{{ step.distance_m }}m</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="directions-card">
+    <h3>📍 Campus Map</h3>
+    <div id="map" style="height: 400px; width: 100%; border-radius: 8px;"></div>
+    <p class="map-hint">Enter your locations above to see the route on the map.</p>
+  </div>
+  {% endif %}
 
 <script>
     var defaultLat = 5.6037;  // Example: Accra center
