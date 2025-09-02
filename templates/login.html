@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniNav - Your Navigation Partner</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav>
+   <div class="logo">UniNav</div>
+      <a href="{{url_for('login')}}">Home</a>|
+      <a href="{{url_for('directions')}}">Directions</a>|
+      <a href="{{url_for('maps')}}">Maps</a>
+    <!-- Panic Button -->
+  <button class="panic-button" onclick="sendPanic()">🚨 SOS Panic</button>
+  <script>
+    function sendPanic() {
+      fetch('/panic', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => alert(data.message))
+        .catch(error => alert("Error sending panic alert."));
+    }
+  </script>
+  </nav>
+  <!-- Hero Section -->
+  <div class="hero">
+    <h1>Find Your Way on Campus</h1>
+    <p>Smart navigation, real-time maps, and safety at your fingertips.</p>
+  </div>
+
+  <!-- User Info Form -->
+  <div class="form-card">
+    <h2>👤 Student Info</h2>
+    <form action="/" method="post">
+      <label for="name">Your Name:</label>
+      <input type="text" id="name" name="name" placeholder="Enter your full name"
+             value="{{ session.get('name', '') }}" required>
+
+      <label for="email">Your Email:</label>
+      <input type="email" id="email" name="email" placeholder="Enter your email"
+             value="{{ session.get('email', '') }}" required>
+
+      <button type="submit" class="primary-btn">💾 Save Info</button>
+    </form>
+  </div>
+  <footer>
+    <p>© 2025 UniNav. All Rights Reserved.</p>
+  </footer>
+
+</body>
+</html>

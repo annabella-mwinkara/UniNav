@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniNav - Campus Map</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    #map { height: 500px; width: 100%; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav>
+    <div class="logo">UniNav</div>
+    <a href="{{ url_for('login') }}">Home</a> |
+    <a href="{{ url_for('directions') }}">Directions</a> |
+    <a href="{{ url_for('maps') }}">Maps</a>
+    <!-- Panic Button -->
+    <button class="panic-button" onclick="sendPanic()">🚨 SOS Panic</button>
+  </nav>
+
+  <script>
+    function sendPanic() {
+      fetch('/panic', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => alert(data.message))
+        .catch(error => alert("Error sending panic alert."));
+    }
+  </script>
+
+  <!-- Map Section -->
+  <div class="hero">
+    <h1>Campus Map</h1>
+    <p>Explore the university campus with interactive maps.</p>
+  </div>
+
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // Initialize map (default UCC coordinates)
+    var map = L.map('map').setView([5.1036, -1.2795], 15);
+
+    // Load OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+    }).addTo(map);
+
+    // Handle route coordinates from the server
+    var routeCoords = {{ route_coords|default([])|tojson|safe }};
+
+    if (routeCoords && routeCoords.length > 0) {
+      // GraphHopper returns [lng, lat], Leaflet needs [lat, lng]
+      var latlngs = routeCoords.map(pt => [pt[1], pt[0]]);
+
+      // Draw polyline
+      var routeLine = L.polyline(latlngs, {color: 'blue'}).addTo(map);
+
+      // Fit map bounds to route
+      map.fitBounds(routeLine.getBounds());
+
+      // Add markers for start and end
+      L.marker(latlngs[0]).addTo(map).bindPopup("Start").openPopup();
+      L.marker(latlngs[latlngs.length - 1]).addTo(map).bindPopup("Destination");
+    } else {
+      // Default marker
+      L.marker([5.1036, -1.2795]).addTo(map).bindPopup("University of Cape Coast");
+    }
+  </script>
+
+  <footer>
+    <p>© 2025 UniNav. All Rights Reserved.</p>
+  </footer>
+</body>
+</html>
+

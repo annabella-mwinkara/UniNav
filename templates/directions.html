@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniNav - Your Navigation Partner</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav>
+    <div class="logo">UniNav</div>
+    <a href="{{ url_for('login') }}">Home</a> |
+    <a href="{{ url_for('directions') }}">Directions</a> |
+    <a href="{{ url_for('maps') }}">Maps</a>
+    <!-- Panic Button -->
+    <button class="panic-button" onclick="sendPanic()">🚨 SOS Panic</button>
+  </nav>
+
+  <script>
+    function sendPanic() {
+      fetch('/panic', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => alert(data.message))
+        .catch(error => alert("Error sending panic alert."));
+    }
+
+    // ✅ Use My Location button
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("useLocBtn").addEventListener("click", () => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const coords = pos.coords.latitude + "," + pos.coords.longitude;
+              document.getElementById("current").value = coords;
+
+              // Save location to session via AJAX
+              fetch("/save_location", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ location: coords })
+              });
+            },
+            () => alert("Unable to fetch location")
+          );
+        } else {
+          alert("Geolocation not supported by this browser.");
+        }
+      });
+    });
+  </script>
+
+  <!-- Route Form -->
+  <div class="form-card">
+    <h2>🗺️ Plan Your Route</h2>
+    <form action="{{ url_for('directions') }}" method="post">
+      <label for="current">Current Location:</label>
+      <div class="input-row">
+        <input type="text" id="current" name="current" placeholder="Place name or 'lat,lon'" required>
+        <button type="button" class="ghost-btn" id="useLocBtn">Use My Location</button>
+      </div>
+
+      <label for="destination">Destination:</label>
+      <input type="text" id="destination" name="destination" placeholder="Place name or 'lat,lon'" required>
+
+      <div class="hint">Tip: You can type a place name (e.g., "UCC Library") or coordinates ("lat,lon").</div>
+
+      <button type="submit" class="primary-btn">➡️ Get Directions</button>
+    </form>
+  </div>
+
+  <!-- Summary Box -->
+  {% if summary %}
+  <div class="summary-box">
+    <div><strong>🚶 Distance:</strong> {{ summary.distance_km }} km</div>
+    <div><strong>⏱ Duration:</strong> {{ summary.duration_min }} minutes</div>
+  </div>
+  {% endif %}
+
+  <div id="map" style="height: 500px; width: 100%;"></div>
+
+<script>
+    var defaultLat = 5.6037;  // Example: Accra center
+    var defaultLon = -0.1870;
+
+    var map = L.map('map').setView([
+        {% if route_coords %}
+            {{ route_coords[0][1] }}, {{ route_coords[0][0] }}
+        {% else %}
+            defaultLat, defaultLon
+        {% endif %}
+    ], 16);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    {% if route_coords %}
+    var latlngs = [
+    {% for coord in route_coords %}
+        [{{ coord[1] }}, {{ coord[0] }}],
+    {% endfor %}
+    ];
+
+    var polyline = L.polyline(latlngs, {color: 'blue'}).addTo(map);
+    map.fitBounds(polyline.getBounds());
+    L.marker(latlngs[0]).addTo(map).bindPopup("Start").openPopup();
+    L.marker(latlngs[latlngs.length-1]).addTo(map).bindPopup("Destination");
+    {% endif %}
+</script>
+
+
+  <footer>
+    <p>© 2025 UniNav. All Rights Reserved.</p>
+  </footer>
+</body>
+</html>

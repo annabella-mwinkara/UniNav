@@ -1,0 +1,165 @@
+/* ===== Global Styling ===== */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #003366;
+  color: #333;
+}
+
+/* ===== Navbar ===== */
+nav {
+  background: linear-gradient(90deg, #004080, #0066cc);
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+nav .logo {
+  font-size: 26px;
+  font-weight: bold;
+}
+nav a {
+  color: white;
+  text-decoration: none;
+  margin-left: 15px;
+  font-size: 16px;
+}
+nav a:hover {
+  text-decoration: underline;
+}
+
+/* ===== Hero Section ===== */
+.hero {
+  padding: 50px 20px;
+  text-align: center;
+  background: url("https://images.unsplash.com/photo-1523050854058-8df90110c9f1?fit=crop&w=1600&q=80") no-repeat center center/cover;
+  color: white;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+}
+.hero h1 {
+  font-size: 42px;
+  margin-bottom: 10px;
+}
+.hero p {
+  font-size: 18px;
+}
+
+/* ===== Cards (Forms & Directions) ===== */
+.form-card, .directions {
+  background: white;
+  width: 80%;
+  margin: 25px auto;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+}
+.form-card h2, .directions h2 {
+  margin-bottom: 15px;
+  color: #004080;
+}
+.form-card label {
+  display: block;
+  text-align: left;
+  margin: 10px 0 5px;
+}
+.form-card input {
+  width: 95%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+.primary-btn {
+  margin-top: 15px;
+  padding: 12px 25px;
+  background: #0066cc;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+.primary-btn:hover {
+  background: #004080;
+}
+
+/* ===== Directions Section ===== */
+.directions pre {
+  background: #f4f4f4;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 15px;
+  text-align: left;
+  line-height: 1.5;
+}
+
+/* ===== Panic Button ===== */
+/* Panic Button (Top Right) */
+.panic-button {
+  margin-left: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  background: red;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+.panic-button:hover {
+  background: darkred;
+  transform: scale(1.05);
+}
+
+
+/* ===== Footer ===== */
+footer {
+  background: #004080;
+  color: white;
+  padding: 12px;
+  text-align: center;
+  margin-top: 40px;
+}
+/* ===== Route Summary Box ===== */
+.summary-box {
+  background: #eaf4ff;
+  border-left: 6px solid #0066cc;
+  width: 80%;
+  margin: 20px auto;
+  padding: 15px 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #003366;
+  display: flex;
+  justify-content: space-between;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
+}
+.summary-box strong {
+  color: #004080;
+}
+/* Directions Panel */
+.directions {
+  width: 90%;
+  margin: 20px auto;
+  background: #f9f9f9;
+  padding: 15px 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+}
+.directions h2 {
+  margin-bottom: 10px;
+  color: #004080;
+}
+.directions ul.steps {
+  list-style-type: none;
+  padding: 0;
+}
+.directions ul.steps li {
+  padding: 8px 10px;
+  border-bottom: 1px solid #ddd;
+}
+.directions ul.steps li:last-child {
+  border-bottom: none;
+}
