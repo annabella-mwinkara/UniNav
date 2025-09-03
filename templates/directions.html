@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>UniNav - Your Navigation Partner</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 </head>
 <body>
   <!-- Navigation Bar -->
@@ -16,39 +17,6 @@
     <!-- Panic Button -->
     <button class="panic-button" onclick="sendPanic()">🚨 SOS Panic</button>
   </nav>
-
-  <script>
-    function sendPanic() {
-      fetch('/panic', {method: 'POST'})
-        .then(response => response.json())
-        .then(data => alert(data.message))
-        .catch(error => alert("Error sending panic alert."));
-    }
-
-    // ✅ Use My Location button
-    document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("useLocBtn").addEventListener("click", () => {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const coords = pos.coords.latitude + "," + pos.coords.longitude;
-              document.getElementById("current").value = coords;
-
-              // Save location to session via AJAX
-              fetch("/save_location", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({ location: coords })
-              });
-            },
-            () => alert("Unable to fetch location")
-          );
-        } else {
-          alert("Geolocation not supported by this browser.");
-        }
-      });
-    });
-  </script>
 
   <!-- Route Form -->
   <div class="form-card">
@@ -74,41 +42,245 @@
   <div class="summary-box">
     <div><strong>🚶 Distance:</strong> {{ summary.distance_km }} km</div>
     <div><strong>⏱ Duration:</strong> {{ summary.duration_min }} minutes</div>
+    <div style="margin-top: 10px;">
+      <a href="{{ url_for('navigate') }}" class="primary-btn">🧭 Start Navigation</a>
+    </div>
   </div>
   {% endif %}
 
+  <!-- Real-time Location Status -->
+  <div id="location-status" style="display:none;" class="alert-box">
+    <div id="location-info">📍 Location tracking active</div>
+    <button onclick="toggleLocationTracking()" id="track-btn" class="ghost-btn">Stop Tracking</button>
+  </div>
+
   <div id="map" style="height: 500px; width: 100%;"></div>
 
-<script>
-    var defaultLat = 5.6037;  // Example: Accra center
-    var defaultLon = -0.1870;
+  <!-- Instructions List -->
+  {% if directions %}
+  <div class="directions-card">
+    <h3>📋 Step-by-Step Directions</h3>
+    <ol>
+      {% for step in directions %}
+      <li>{{ step }}</li>
+      {% endfor %}
+    </ol>
+  </div>
+  {% endif %}
 
-    var map = L.map('map').setView([
-        {% if route_coords %}
-            {{ route_coords[0][1] }}, {{ route_coords[0][0] }}
-        {% else %}
-            defaultLat, defaultLon
-        {% endif %}
-    ], 16);
+ <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    let map;
+    let userLocationMarker;
+    let routePolyline;
+    let isTracking = false;
+    let watchId = null;
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+    // Initialize map
+    function initMap() {
+      var defaultLat = 5.6037;  // Example: Accra center
+      var defaultLon = -0.1870;
+      
+      map = L.map('map').setView([
+          {% if route_coords %}
+              {{ route_coords[0][1] }},{{ route_coords[0][0] }}
+          {% else %}
+              defaultLat, defaultLon
+          {% endif %}
+      ], 16);
 
-    {% if route_coords %}
-    var latlngs = [
-    {% for coord in route_coords %}
-        [{{ coord[1] }}, {{ coord[0] }}],
-    {% endfor %}
-    ];
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
 
-    var polyline = L.polyline(latlngs, {color: 'blue'}).addTo(map);
-    map.fitBounds(polyline.getBounds());
-    L.marker(latlngs[0]).addTo(map).bindPopup("Start").openPopup();
-    L.marker(latlngs[latlngs.length-1]).addTo(map).bindPopup("Destination");
-    {% endif %}
-</script>
+      {% if route_coords %}
+      var latlngs = [
+      {% for coord in route_coords %}
+          [{{ coord[1] }}, {{ coord[0] }}],
+      {% endfor %}
+      ];
+     
+      routePolyline = L.polyline(latlngs, {color: 'blue', weight: 5}).addTo(map);
+      map.fitBounds(routePolyline.getBounds());
+      L.marker(latlngs[0]).addTo(map).bindPopup("Start").openPopup();
+      L.marker(latlngs[latlngs.length-1]).addTo(map).bindPopup("Destination");
 
+
+      // Start location tracking automatically if route is displayed
+      startLocationTracking();
+      
+    }
+
+    // Start real-time location tracking
+    function startLocationTracking() {
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported by this browser.");
+        return;
+      }
+
+      isTracking = true;
+      document.getElementById("location-status").style.display = "block";
+      document.getElementById("track-btn").innerText = "Stop Tracking";
+
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      };
+
+      watchId = navigator.geolocation.watchPosition(
+        updateUserLocation,
+        handleLocationError,
+        options
+      );
+    }
+
+    // Stop location tracking
+    function stopLocationTracking() {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+      
+      isTracking = false;
+      document.getElementById("location-status").style.display = "none";
+      
+      if (userLocationMarker) {
+        map.removeLayer(userLocationMarker);
+        userLocationMarker = null;
+      }
+    }
+
+    // Toggle location tracking
+    function toggleLocationTracking() {
+      if (isTracking) {
+        stopLocationTracking();
+      } else {
+        startLocationTracking();
+      }
+    }
+
+    // Update user location on map
+    function updateUserLocation(position) {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const accuracy = position.coords.accuracy;
+
+      // Update location on server
+      fetch('/update_location', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ lat: lat, lng: lng, accuracy: accuracy })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.distance_to_destination) {
+          const distance = Math.round(data.distance_to_destination);
+          document.getElementById("location-info").innerHTML = 
+            `📍 Location updated | 🎯 ${distance}m to destination`;
+          
+          // Alert if very close to destination
+          if (distance < 20) {
+            alert("🎉 You've arrived at your destination!");
+            stopLocationTracking();
+          }
+        }
+      });
+
+      // Remove old marker
+      if (userLocationMarker) {
+        map.removeLayer(userLocationMarker);
+      }
+
+      // Add new marker with accuracy circle
+      userLocationMarker = L.marker([lat, lng], {
+        icon: L.icon({
+          iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiIGZpbGw9IiMwMDc4ZmYiIHN0cm9rZT0iIzAwNTZiMyIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjQiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=',
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        })
+      }).addTo(map);
+
+      // Add accuracy circle
+      if (accuracy < 100) {
+        L.circle([lat, lng], {
+          radius: accuracy,
+          fillColor: '#0078ff',
+          fillOpacity: 0.1,
+          color: '#0078ff',
+          weight: 1
+        }).addTo(map);
+      }
+
+      // Center map on user location if first update
+      if (!map.hasBeenCentered) {
+        map.setView([lat, lng], 18);
+        map.hasBeenCentered = true;
+      }
+    }
+
+    // Handle location errors
+    function handleLocationError(error) {
+      let message = '';
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          message = "Location access denied by user.";
+          break;
+        case error.POSITION_UNAVAILABLE:
+          message = "Location information is unavailable.";
+          break;
+        case error.TIMEOUT:
+          message = "Location request timed out.";
+          break;
+        default:
+          message = "An unknown error occurred.";
+          break;
+      }
+      console.error("Location error: " + message);
+      document.getElementById("location-info").innerHTML = "❌ " + message;
+    }
+
+    // Panic button functionality
+    function sendPanic() {
+      fetch('/panic', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => alert(data.message))
+        .catch(error => alert("Error sending panic alert."));
+    }
+
+    // Use My Location button
+    document.addEventListener("DOMContentLoaded", () => {
+      initMap();
+      
+      document.getElementById("useLocBtn").addEventListener("click", () => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const coords = pos.coords.latitude + "," + pos.coords.longitude;
+              document.getElementById("current").value = coords;
+
+              // Save location to session via AJAX
+              fetch("/save_location", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ location: coords })
+              });
+            },
+            () => alert("Unable to fetch location")
+          );
+        } else {
+          alert("Geolocation not supported by this browser.");
+        }
+      });
+    });
+
+    // Clean up when page is unloaded
+    window.addEventListener('beforeunload', () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    });
+  </script>
 
   <footer>
     <p>© 2025 UniNav. All Rights Reserved.</p>

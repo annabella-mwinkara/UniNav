@@ -163,3 +163,120 @@ footer {
 .directions ul.steps li:last-child {
   border-bottom: none;
 }
+
+    .nav-header {
+      background: linear-gradient(135deg, #0078ff, #00c6ff);
+      color: white;
+      padding: 15px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .nav-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+    }
+    
+    .distance-info {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    .navigation-controls {
+      margin: 10px 0;
+      text-align: center;
+    }
+    
+    .control-btn {
+      padding: 10px 20px;
+      margin: 0 5px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+    
+    .control-btn.active {
+      background: #00c6ff;
+      color: white;
+    }
+    
+    .control-btn.inactive {
+      background: #f0f0f0;
+      color: #666;
+    }
+    
+    .control-btn.danger {
+      background: #ff4444;
+      color: white;
+    }
+    
+    #map {
+      height: calc(100vh - 200px);
+      width: 100%;
+    }
+    
+    .arrival-alert {
+      background: #4CAF50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 10px;
+      margin: 10px;
+      display: none;
+    }
+    
+    .location-accuracy {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    #map { height: 500px; width: 100%; margin-top: 20px; }
+    .location-controls {
+      text-align: center;
+      margin: 15px 0;
+    }
+    .location-btn {
+      padding: 10px 20px;
+      margin: 0 5px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      background: #0078ff;
+      color: white;
+    }
+    .location-btn:hover {
+      background: #0056b3;
+      transform: translateY(-1px);
+    }
+    .location-btn.inactive {
+      background: #f0f0f0;
+      color: #666;
+    }
+    .location-status {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+      display: none;
+    }
+    .location-status.active {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .location-status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
