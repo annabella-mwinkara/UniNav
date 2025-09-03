@@ -70,47 +70,62 @@
 
  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    let map;
-    let userLocationMarker;
-    let routePolyline;
-    let isTracking = false;
-    let watchId = null;
+     let map;
+let userLocationMarker;
+let routePolyline;
+let isTracking = false;
+let watchId = null;
 
-    // Initialize map
-    function initMap() {
-      var defaultLat = 5.6037;  // Example: Accra center
-      var defaultLon = -0.1870;
-      
-      map = L.map('map').setView([
-          {% if route_coords %}
-              {{ route_coords[0][1] }},{{ route_coords[0][0] }}
-          {% else %}
-              defaultLat, defaultLon
-          {% endif %}
-      ], 16);
+// ✅ Safely load route_coords from Flask (or default empty list)
+let routeCoords = [];
+try {
+  routeCoords = {{ route_coords | default([]) | tojson | safe }};
+  console.log("Route coordinates loaded:", routeCoords);
+} catch (e) {
+  console.error("Error loading route coordinates:", e);
+  routeCoords = [];
+}
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
+// ✅ Initialize map
+function initMap() {
+  const defaultLat = 5.6037;  // Accra center
+  const defaultLon = -0.1870;
 
-      {% if route_coords %}
-      var latlngs = [
-      {% for coord in route_coords %}
-          [{{ coord[1] }}, {{ coord[0] }}],
-      {% endfor %}
-      ];
-     
-      routePolyline = L.polyline(latlngs, {color: 'blue', weight: 5}).addTo(map);
-      map.fitBounds(routePolyline.getBounds());
-      L.marker(latlngs[0]).addTo(map).bindPopup("Start").openPopup();
-      L.marker(latlngs[latlngs.length-1]).addTo(map).bindPopup("Destination");
+  // Start centered at Accra
+  let initialLat = defaultLat;
+  let initialLon = defaultLon;
 
+  // If we have route coordinates, use the first point as center
+  if (routeCoords && routeCoords.length > 0) {
+    initialLat = routeCoords[0][1]; // lat
+    initialLon = routeCoords[0][0]; // lon
+  }
 
-      // Start location tracking automatically if route is displayed
-      startLocationTracking();
-      
-    }
+  // Create map
+  map = L.map('map').setView([initialLat, initialLon], 16);
 
+  // Add OpenStreetMap tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // ✅ Draw route only if available
+  if (routeCoords && routeCoords.length > 0) {
+    let latlngs = routeCoords.map(coord => [coord[1], coord[0]]); // Convert [lng, lat] → [lat, lng]
+
+    routePolyline = L.polyline(latlngs, { color: 'blue', weight: 5 }).addTo(map);
+    map.fitBounds(routePolyline.getBounds());
+
+    // Add start & destination markers
+    L.marker(latlngs[0]).addTo(map).bindPopup("Start").openPopup();
+    L.marker(latlngs[latlngs.length - 1]).addTo(map).bindPopup("Destination");
+
+    // Start location tracking automatically
+    startLocationTracking();
+  } else {
+    console.log("No route data available. Showing default map only.");
+  }
+}
     // Start real-time location tracking
     function startLocationTracking() {
       if (!navigator.geolocation) {
@@ -186,7 +201,7 @@
           }
         }
       });
-
+    
       // Remove old marker
       if (userLocationMarker) {
         map.removeLayer(userLocationMarker);
