@@ -5,6 +5,8 @@ import os
 from email.mime.text import MIMEText
 from datetime import datetime
 from dotenv import load_dotenv
+import json
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Load environment variables from .env file
 load_dotenv()
@@ -13,6 +15,26 @@ app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY')  # Get secret key from environment variable
 
 GRAPHOPPER_API_KEY = os.getenv('GRAPHHOPPER_API_KEY')
+USERS_FILE = os.path.join(os.path.dirname(__file__), 'users.json')
+
+
+# ---------- Simple JSON user store ----------
+def load_users():
+    try:
+        if os.path.exists(USERS_FILE):
+            with open(USERS_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+
+def save_users(users: dict):
+    try:
+        with open(USERS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(users, f, indent=2)
+    except Exception as e:
+        print('Error saving users:', e)
 
 
 # ---------- Helper function to geocode ----------
@@ -23,29 +45,100 @@ def get_coordinates(location):
         try:
             lat, lon = location.split(",")
             return f"{lat.strip()},{lon.strip()}"
-        except:
+        except Exception:
             return None
 
     # Otherwise, use GraphHopper Geocoding API
     geo_url = f"https://graphhopper.com/api/1/geocode?q={location}&locale=en&key={GRAPHOPPER_API_KEY}"
-    response = requests.get(geo_url).json()
-
-    if "hits" in response and len(response["hits"]) > 0:
-        lat = response["hits"][0]["point"]["lat"]
-        lon = response["hits"][0]["point"]["lng"]
-        return f"{lat},{lon}"
-
-    return None
+    try:
+        response = requests.get(geo_url).json()
+        if "hits" in response and len(response["hits"]) > 0:
+            lat = response["hits"][0]["point"]["lat"]
+            lon = response["hits"][0]["point"]["lng"]
+            return f"{lat},{lon}"
+        else:
+            return None
+    except Exception:
+        return None
 
 
 # ---------- Login Page ----------
 @app.route("/", methods=["GET", "POST"])
 def login():
-    if request.method == "POST":
-        session["name"] = request.form["name"]
-        session["email"] = request.form["email"]
+    error = None
+    message = None
+    current_user = None
 
-    return render_template("login.html", session=session)
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not email or not password:
+            error = "Please enter both email and password."
+        else:
+            users = load_users()
+            # Existing user: attempt login
+            if email in users:
+                user = users[email]
+                if check_password_hash(user.get('password_hash', ''), password):
+                    session['user_email'] = email
+                    session['name'] = user.get('name', name)
+                    session['email'] = email
+                    message = "Logged in successfully."
+                    current_user = user
+                else:
+                    error = "Invalid email or password."
+            else:
+                # Register new user
+                if not name:
+                    error = "Please provide your name to create an account."
+                else:
+                    users[email] = {
+                        'name': name,
+                        'email': email,
+                        'password_hash': generate_password_hash(password)
+                    }
+                    save_users(users)
+                    session['user_email'] = email
+                    session['name'] = name
+                    session['email'] = email
+                    message = "Account created and logged in."
+                    current_user = users[email]
+
+    if not current_user and session.get('user_email'):
+        users = load_users()
+        current_user = users.get(session['user_email'])
+
+    return render_template("login.html", session=session, error=error, message=message, user=current_user)
+
+
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
+    if not session.get('user_email'):
+        return redirect(url_for('login'))
+
+    users = load_users()
+    email = session['user_email']
+    user = users.get(email, {})
+    message = None
+
+    new_name = request.form.get('name', '').strip()
+    new_password = request.form.get('password', '').strip()
+
+    if new_name:
+        user['name'] = new_name
+        session['name'] = new_name
+        message = 'Name updated.'
+
+    if new_password:
+        user['password_hash'] = generate_password_hash(new_password)
+        message = (message + ' ' if message else '') + 'Password updated.'
+
+    users[email] = user
+    save_users(users)
+
+    return render_template('login.html', session=session, user=user, message=message)
 
 
 @app.route("/directions", methods=["GET", "POST"])
@@ -54,41 +147,42 @@ def directions():
     summary = None
     coords = []
 
+    error = None
     if request.method == "POST":
-        current = request.form.get("current")
-        destination = request.form.get("destination")
-
-        current_coords = get_coordinates(current)
-        destination_coords = get_coordinates(destination)
-
-        if not current_coords or not destination_coords:
-            directions_list = ["❌ Could not recognize one of the locations."]
+        current = request.form.get("current", "").strip()
+        destination = request.form.get("destination", "").strip()
+        if not current or not destination:
+            error = "Please enter both your current location and destination."
         else:
-            url = (f"https://graphhopper.com/api/1/route?"
-                   f"point={current_coords}&point={destination_coords}"
-                   f"&vehicle=foot&locale=en&key={GRAPHOPPER_API_KEY}&points_encoded=false")
-            response = requests.get(url)
-            data = response.json()
-
-            if "paths" in data and len(data["paths"]) > 0:
-                path = data["paths"][0]
-                directions_list = [instr["text"] for instr in path["instructions"]]
-                coords = path["points"]["coordinates"]
-                distance_km = round(path["distance"] / 1000, 2)
-                duration_min = round(path["time"] / 60000, 1)
-                summary = {"distance_km": distance_km, "duration_min": duration_min}
-                
-                # Store route data in session for maps page
-                session["last_route_coords"] = coords
-                session["destination_coords"] = destination_coords
+            current_coords = get_coordinates(current)
+            destination_coords = get_coordinates(destination)
+            if not current_coords or not destination_coords:
+                directions_list = ["❌ Could not recognize one of the locations. Please check your input."]
             else:
-                directions_list = ["❌ Error fetching directions."]
+                url = (f"https://graphhopper.com/api/1/route?"
+                       f"point={current_coords}&point={destination_coords}"
+                       f"&vehicle=foot&locale=en&key={GRAPHOPPER_API_KEY}&points_encoded=false")
+                try:
+                    response = requests.get(url)
+                    data = response.json()
+                    if "paths" in data and len(data["paths"]) > 0:
+                        path = data["paths"][0]
+                        directions_list = [instr["text"] for instr in path["instructions"]]
+                        coords = path["points"]["coordinates"]
+                        distance_km = round(path["distance"] / 1000, 2)
+                        duration_min = round(path["time"] / 60000, 1)
+                        summary = {"distance_km": distance_km, "duration_min": duration_min}
+                    else:
+                        directions_list = ["❌ Error fetching directions. Please try again later."]
+                except Exception:
+                    directions_list = ["❌ Unable to connect to directions service. Please check your internet connection."]
 
     return render_template(
         "directions.html",
         directions=directions_list,
         summary=summary,
-        route_coords=coords
+        route_coords=coords,
+        error=error
     )
 
 
@@ -98,8 +192,8 @@ def save_location():
     data = request.get_json()
     if data and "location" in data:
         session["last_location"] = data["location"]
-        return jsonify({"status": "ok"})
-    return jsonify({"status": "error"}), 400
+        return jsonify({"status": "ok", "message": "Location saved successfully."})
+    return jsonify({"status": "error", "message": "No location data provided."}), 400
 
 
 # ---------- Update Real-time Location ----------
@@ -208,10 +302,14 @@ def panic():
     msg["From"] = "uninavalerts@gmail.com"
     msg["To"] = "annabella@aims.edu.gh"
 
+    server_login = os.getenv("Serverlogin")
+    app_password = os.getenv("app_p")
+    if not server_login or not app_password:
+        return jsonify({"message": "Email service is not configured. Please contact support."}), 500
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
-            server.login(os.getenv("Serverlogin"), os.getenv("app_p"))
+            server.login(server_login, app_password)
             server.sendmail("uninav.alerts@gmail.com", "annabella@aims.edu.gh", msg.as_string())
         return jsonify({"message": "🚨 Panic alert sent successfully!"})
     except Exception as e:
