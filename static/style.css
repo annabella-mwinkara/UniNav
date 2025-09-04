@@ -5,6 +5,9 @@ body {
   padding: 0;
   background: #003366;
   color: black;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ===== Navbar ===== */
@@ -112,6 +115,20 @@ nav a:hover {
   background: darkred;
   transform: scale(1.05);
 }
+.panic-button-home {
+  display: block;
+  width: 100vw;
+  max-width: 100%;
+  margin: 0 auto 20px auto;
+  border-radius: 0;
+  font-size: 20px;
+  font-weight: bold;
+  background: red;
+  color: white;
+  padding: 18px 0;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
 
 
 /* ===== Footer ===== */
@@ -120,7 +137,8 @@ footer {
   color: white;
   padding: 12px;
   text-align: center;
-  margin-top: 40px;
+  margin-top: auto;
+  width: 100%;
 }
 /* ===== Route Summary Box ===== */
 .summary-box {
@@ -298,14 +316,11 @@ footer {
   .nav-links {
     display: none; /* hidden by default */
     flex-direction: column; /* vertical menu */
-    position: absolute;
-    top: 100%;
-    left: 0;
+    position: static;
     width: 100%;
     background: linear-gradient(90deg, #004080, #0066cc);
     padding: 10px 12px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    z-index: 1000;
   }
   .nav-links.open { display: flex; }
   nav a { padding: 8px 0; }
@@ -330,6 +345,7 @@ footer {
     align-items: center;
     padding: 8px 10px;
     gap: 8px;
+    position: relative;
   }
   nav .logo {
     display: none; /* Hide brand name on mobile as requested */
@@ -343,6 +359,7 @@ footer {
     position: absolute;
     top: 100%;
     left: 0;
+    right: 0;
     width: 100%;
     background: linear-gradient(90deg, #004080, #0066cc);
     padding: 10px 12px;
