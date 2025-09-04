@@ -12,9 +12,10 @@
   <!-- Navigation Bar -->
   <nav>
     <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleNav()">☰</button>
-    <div class="logo">UniNav</div>
-    <a href="{{ url_for('login') }}">Home</a> |
-          <a href="{{ url_for('directions') }}">Directions</a>|
+    <div class="logo"><a href="{{ url_for('login') }}">UniNav</a></div>
+    <div class="nav-links" id="navLinks">
+      <a href="{{ url_for('login') }}">Home</a>
+      <a href="{{ url_for('directions') }}">Directions</a>
       <a href="{{ url_for('maps') }}">Maps</a>
     </div>
     <button class="panic-button" onclick="sendPanic()">🚨 SOS Panic</button>
