@@ -11,13 +11,86 @@
 <body>
   <!-- Navigation Bar -->
   <nav>
+    <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleNav()">☰</button>
     <div class="logo">UniNav</div>
     <a href="{{ url_for('login') }}">Home</a> |
-    <a href="{{ url_for('directions') }}">Directions</a> |
-    <a href="{{ url_for('maps') }}">Maps</a>
-    <!-- Panic Button -->
+          <a href="{{ url_for('directions') }}">Directions</a>|
+      <a href="{{ url_for('maps') }}">Maps</a>
+    </div>
     <button class="panic-button" onclick="sendPanic()">🚨 SOS Panic</button>
   </nav>
+
+  <script>
+    function toggleNav(){
+      const el = document.getElementById('navLinks');
+      el.classList.toggle('open');
+    }
+
+    let panicInterval = null;
+    let panicActive = false;
+
+    function sendPanic() {
+      if (panicActive) {
+        // Stop panic mode
+        clearInterval(panicInterval);
+        panicActive = false;
+        fetch('/panic', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({action: 'stop'})
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          updatePanicButton();
+        });
+      } else {
+        // Start panic mode
+        panicActive = true;
+        
+        // Send first alert immediately
+        fetch('/panic', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({action: 'start'})
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          updatePanicButton();
+          
+          // Set interval for every 5 minutes
+          panicInterval = setInterval(() => {
+            fetch('/panic', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({action: 'start'})
+            })
+            .then(response => response.json())
+            .then(data => console.log('Panic alert sent:', data.message));
+          }, 300000); // 5 minutes
+        })
+        .catch(error => {
+          alert("Error sending panic alert.");
+          panicActive = false;
+          updatePanicButton();
+        });
+      }
+    }
+
+    function updatePanicButton() {
+      const buttons = document.querySelectorAll('.panic-button');
+      buttons.forEach(btn => {
+        if (panicActive) {
+          btn.innerHTML = '🛑 Stop Alerts';
+          btn.style.background = '#ff6600';
+        } else {
+          btn.innerHTML = '🚨 SOS Panic';
+          btn.style.background = 'red';
+        }
+      });
+    }
+  </script>
 
   <!-- Map Section -->
   <div class="hero">
