@@ -18,19 +18,38 @@ nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
 }
 nav .logo {
   font-size: 26px;
   font-weight: bold;
 }
+/* Nav links container */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
 nav a {
   color: white;
   text-decoration: none;
-  margin-left: 15px;
+  margin-left: 0;
   font-size: 16px;
 }
 nav a:hover {
   text-decoration: underline;
+}
+
+/* Hamburger toggle (hidden by default, shown on mobile) */
+.nav-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 26px;
+  cursor: pointer;
+  padding: 6px 8px;
 }
 
 /* ===== Hero Section ===== */
@@ -39,7 +58,11 @@ nav a:hover {
   text-align: center;
   background: url("https://images.unsplash.com/photo-1523050854058-8df90110c9f1?fit=crop&w=1600&q=80") no-repeat center center/cover;
   color: white;
-  text-shadow: 1px 1px 3px black (0, 0, 0, 0.7);
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 .hero h1 {
   font-size: 42px;
@@ -57,6 +80,11 @@ nav a:hover {
   padding: 25px;
   border-radius: 12px;
   box-shadow: 0px 4px 15px black (0,0,0,0.1);
+}
+.route-card {
+  max-width: 700px;
+  width: 90%;
+  margin: 60px auto 25px; /* add top space and keep horizontal center */
 }
 .form-card h2, .directions h2 {
   margin-bottom: 15px;
@@ -128,6 +156,98 @@ nav a:hover {
   padding: 18px 0;
   text-align: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* Home page special panic button */
+.panic-button-home {
+  background: #ff0033;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  box-shadow: 0 6px 14px rgba(255,0,51,0.35);
+}
+.panic-button-home:hover {
+  background: #cc002a;
+}
+
+/* Large panic button for home page */
+.panic-button-large {
+  padding: 20px 30px;
+  font-size: 18px;
+  line-height: 1.4;
+  min-width: 280px;
+}
+
+/* Hero panic button - large and prominent */
+.panic-button-hero {
+  background: #ff0033;
+  border: none;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  box-shadow: 0 8px 20px rgba(255,0,51,0.4);
+  padding: 25px 40px;
+  font-size: 20px;
+  line-height: 1.3;
+  min-width: 320px;
+  color: white;
+  cursor: pointer;
+  transition: 0.3s ease;
+  text-align: center;
+}
+.panic-button-hero:hover {
+  background: #cc002a;
+  transform: scale(1.05);
+  box-shadow: 0 10px 25px rgba(255,0,51,0.5);
+}
+
+/* Nav profile button */
+.nav-profile-btn {
+  background: transparent;
+  border: 1px solid #fff;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-left: 10px;
+}
+.nav-profile-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* Modal styles */
+.modal {
+  position: fixed;
+  z-index: 2000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+}
+.modal-content {
+  background-color: #fff;
+  margin: 10% auto;
+  padding: 25px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+}
+.close {
+  position: absolute;
+  right: 15px;
+  top: 15px;
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.close:hover {
+  color: #000;
 }
 
 
@@ -666,7 +786,11 @@ footer {
     padding: 8px 0;
   }
   .panic-button {
+<<<<<<< HEAD
     /* margin-left: auto;  */
+=======
+    margin-left: auto; /* Keep panic button visible on the right */
+>>>>>>> 439cd599701d80e8e97b2ce8360be51c6c504afc
     font-size: 15px;
     padding: 8px 14px;
   }
@@ -763,4 +887,8 @@ footer {
     margin-left: 0;
     margin-top: 5px;
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 439cd599701d80e8e97b2ce8360be51c6c504afc

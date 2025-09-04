@@ -17,6 +17,12 @@
       <a href="{{ url_for('login') }}">Home</a>
       <a href="{{ url_for('directions') }}">Directions</a>
       <a href="{{ url_for('maps') }}">Maps</a>
+<<<<<<< HEAD
+=======
+      {% if session.get('user_email') %}
+      <button type="button" class="nav-profile-btn" onclick="openProfileModal()">👤 Profile</button>
+      {% endif %}
+>>>>>>> 439cd599701d80e8e97b2ce8360be51c6c504afc
     </div>
     <button class="panic-button" onclick="sendPanic()">🚨 SOS Panic</button>
   </nav>
@@ -162,6 +168,32 @@
         <div class="step-text">{{ step.instruction }}</div>
         {% if step.distance_m %}
         <div class="step-distance">{{ step.distance_m }}m</div>
+<<<<<<< HEAD
+=======
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="directions-card">
+    <h3>📍 Campus Map</h3>
+    <div id="map" style="height: 400px; width: 100%; border-radius: 8px;"></div>
+    <p class="map-hint">Enter your locations above to see the route on the map.</p>
+  </div>
+  {% endif %}
+
+<script>
+    var defaultLat = 5.6037;  // Example: Accra center
+    var defaultLon = -0.1870;
+
+    var map = L.map('map').setView([
+        {% if route_coords %}
+            {{ route_coords[0][1] }}, {{ route_coords[0][0] }}
+        {% else %}
+            defaultLat, defaultLon
+>>>>>>> 439cd599701d80e8e97b2ce8360be51c6c504afc
         {% endif %}
       </div>
       {% endfor %}

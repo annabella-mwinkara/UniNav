@@ -12,7 +12,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv('FLASK_SECRET_KEY')  # Get secret key from environment variable
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-fallback-secret-key-here')  # Get secret key from environment variable
 
 GRAPHOPPER_API_KEY = os.getenv('GRAPHHOPPER_API_KEY')
 USERS_FILE = os.path.join(os.path.dirname(__file__), 'users.json')
@@ -146,6 +146,7 @@ def directions():
     directions_list = []
     summary = None
     coords = []
+    steps = []
 
     error = None
     if request.method == "POST":
@@ -276,6 +277,18 @@ def panic():
     current_location = session.get("current_location", last_location)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    # Check if panic mode is being activated or stopped
+    data = request.get_json() or {}
+    action = data.get('action', 'start')
+    
+    if action == 'stop':
+        session['panic_active'] = False
+        return jsonify({"message": "🛑 Panic alerts stopped.", "status": "stopped"})
+    
+    # Activate panic mode
+    session['panic_active'] = True
+    session['panic_start_time'] = datetime.now().isoformat()
+
     # ✅ Always try to make Google Maps link
     maps_link = ","
     if current_location and "," in current_location:
@@ -311,12 +324,24 @@ def panic():
             server.starttls()
             server.login(server_login, app_password)
             server.sendmail("uninav.alerts@gmail.com", "annabella@aims.edu.gh", msg.as_string())
-        return jsonify({"message": "🚨 Panic alert sent successfully!"})
+        return jsonify({
+            "message": "🚨 Panic alert sent! Will repeat every 5 minutes until stopped.", 
+            "status": "active"
+        })
     except Exception as e:
         return jsonify({"message": f"Error sending email: {e}"}), 500
 
 
-# ---------- MAPS ----------
+@app.route("/panic_status", methods=["GET"])
+def panic_status():
+    """Check if panic mode is currently active"""
+    is_active = session.get('panic_active', False)
+    start_time = session.get('panic_start_time')
+    return jsonify({
+        "active": is_active,
+        "start_time": start_time
+    })
+    #.........................MAPS.......................................
 @app.route("/maps")
 def maps():
     # Get last route coordinates from session if available
