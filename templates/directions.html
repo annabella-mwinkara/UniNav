@@ -18,7 +18,6 @@
       <a href="{{ url_for('directions') }}">Directions</a>
       <a href="{{ url_for('maps') }}">Maps</a>
       {% if session.get('user_email') %}
-      <button type="button" class="nav-profile-btn" onclick="openProfileModal()">👤 Profile</button>
       {% endif %}
     </div>
     <button class="panic-button" onclick="sendPanic()">🚨 SOS Panic</button>
@@ -142,7 +141,7 @@
   <!-- Summary Box -->
   {% if summary %}
   <div class="summary-box">
-    <div><strong>🚶 Distance:</strong> {{ summary.distance_km }} km</div>
+    <div><strong>🚶 Distance:</strong> {{ summary.distance_km }} km</div>1
     <div><strong>⏱ Duration:</strong> {{ summary.duration_min }} minutes</div>
     <div style="margin-top: 10px;">
       <a href="{{ url_for('navigate') }}" class="primary-btn">🧭 Start Navigation</a>
