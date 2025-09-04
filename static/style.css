@@ -786,11 +786,7 @@ footer {
     padding: 8px 0;
   }
   .panic-button {
-<<<<<<< HEAD
     /* margin-left: auto;  */
-=======
-    margin-left: auto; /* Keep panic button visible on the right */
->>>>>>> 439cd599701d80e8e97b2ce8360be51c6c504afc
     font-size: 15px;
     padding: 8px 14px;
   }
@@ -887,8 +883,4 @@ footer {
     margin-left: 0;
     margin-top: 5px;
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 439cd599701d80e8e97b2ce8360be51c6c504afc
