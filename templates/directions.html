@@ -139,10 +139,9 @@
   <!-- Summary Box -->
   {% if summary %}
   <div class="summary-box">
-    <div><strong>🚶 Distance:</strong> {{ summary.distance_km }} km</div>1
+    <div><strong>🚶 Distance:</strong> {{ summary.distance_km }} km</div>
     <div><strong>⏱ Duration:</strong> {{ summary.duration_min }} minutes</div>
     <div style="margin-top: 10px;">
-      <a href="{{ url_for('navigate') }}" class="primary-btn">🧭 Start Navigation</a>
     </div>
   </div>
   {% endif %}
